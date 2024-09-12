@@ -1,87 +1,134 @@
-
-//	display.c - contains functions for the visual output of the clock
-
-#include "display.h"
-#include "framebuffer.h"
+#include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include "sense.h"
+#include "display.h"
 
-void display_colons(pi_framebuffer_t *dev){
+#define WHITE 0xFFFF
+#define BLACK 0x0000
+#define RED 0XF000
+#define GREEN 0x0F00
+#define BLUE 0x00F0
 
-	for (int i = 1; i < 6; i++){
-		if (i != 3){
-			for (int j = 1; j < 6; j++){
-				if (j != 3){
-					dev->bitmap->pixel[i][j] = getColor(100, 100, 100);
-				}
-			}
-		}
-	}
+pi_framebuffer_t *fb;
+sense_fb_bitmap_t *bm;
 
-	return;
+void clear(void){
+
+clearFrameBuffer(fb, BLACK);
 }
 
-void display_time(int hours, int minutes, int seconds, pi_framebuffer_t *dev){
+void convertToBinary(int num[], int decimal){
 
-	display_seconds(seconds, dev);
-	display_minutes(minutes, dev);
-	display_hours(hours, dev);
+
+        for(int i=7; i>=0; i--){
+                int currentNumPlace = pow(2,i);
+                //ease of use constant var
+
+                if(decimal - currentNumPlace >= 0){
+                        decimal = decimal - currentNumPlace;
+                        num[i] = 1;
+                }else{
+                        num[i] = 0;
+                }
+
+        }
 }
 
-void display_hours(int hours, pi_framebuffer_t *dev){
+int open_display(void){
 
-	uint16_t blue = getColor(0,0,150);
-	uint16_t clear = getColor(0,0,0);
-	double bin_val;
-
-	for (int i = 6; i >= 0; i--){
-		bin_val = pow((double)2.0, (double)i);
-
-		if (bin_val <= hours){
-			dev->bitmap->pixel[i][6] = blue;
-			hours -= bin_val;
-		}
-		else{
-			dev->bitmap->pixel[i][6] = clear;
-		}
-	}
-
+fb=getFrameBuffer();
+bm = fb->bitmap;
+        return 0;
 }
 
-void display_minutes(int minutes, pi_framebuffer_t *dev){
-
-	uint16_t green = getColor(0,150,0);
-	uint16_t clear = getColor(0,0,0);
-	double bin_val;
-
-	for (int i = 6; i >= 0; i--){
-		bin_val = pow(2.0, (double)i);
-
-		if (bin_val <= minutes){
-			dev->bitmap->pixel[i][3] = green;
-			minutes -= bin_val;
-		}
-		else{
-			dev->bitmap->pixel[i][3] = clear;
-		}
-	}
+void display_time(int hours, int minutes, int seconds){
+/*
+displays the time
+*/
+        display_colons();
+        display_hours(hours);
+        display_minutes(minutes);
+        display_seconds(seconds);
 }
 
-void display_seconds(int seconds, pi_framebuffer_t *dev){
+void display_colons(void){
+/*
+displays the colons of the clock
+*/
+bm->pixel[5][1]=WHITE;
+bm->pixel[5][2]=WHITE;
+bm->pixel[5][5]=WHITE;
+bm->pixel[5][6]=WHITE;
 
-	uint16_t red = getColor(150,0,0);
-	uint16_t clear = getColor(0,0,0);
-	double bin_val;
+bm->pixel[4][1]=WHITE;
+bm->pixel[4][2]=WHITE;
+bm->pixel[4][5]=WHITE;
+bm->pixel[4][6]=WHITE;
 
-	for (int i = 6; i >= 0; i--){
-		bin_val = pow(2.0, (double)i);
+bm->pixel[2][1]=WHITE;
+bm->pixel[2][2]=WHITE;
+bm->pixel[2][5]=WHITE;
+bm->pixel[2][6]=WHITE;
 
-		if (bin_val <= seconds){
-			dev->bitmap->pixel[i][0] = red;
-			seconds -= bin_val;
-		}
-		else{
-			dev->bitmap->pixel[i][0] = clear;
-		}
+bm->pixel[1][1]=WHITE;
+bm->pixel[1][2]=WHITE;
+bm->pixel[1][5]=WHITE;
+bm->pixel[1][6]=WHITE;
+}
 
-	}
+void display_number(int color, int display){
+
+        int displayVal[8];
+
+        convertToBinary(displayVal, display);
+
+        for(int i=0; i<8; i++){
+                if(displayVal[i] == 1){
+                        switch(color){
+                                case 0:
+                                        bm->pixel[6][7-i]=RED;
+                                        break;
+
+                                case 1:
+                                        bm->pixel[3][7-i]=GREEN;
+                                        break;
+
+                                case 2:
+                                        bm->pixel[0][7-i]=BLUE;
+                                        break;
+                        }
+
+                }
+        }
+}
+
+void display_hours(int hours){
+/*
+displays the hours of the clock
+*/
+        display_number(0, hours);
+}
+
+void display_minutes(int minutes){
+/*
+displays the minutes of the clock
+*/
+        display_number(1, minutes);
+}
+
+void display_seconds(int seconds){
+/*
+displays the seconds of the clock
+*/
+        display_number(2, seconds);
+}
+
+void close_display(void){
+/*
+closes the display
+*/
+        clearFrameBuffer(fb, BLACK);
+        freeFrameBuffer(fb);
 }

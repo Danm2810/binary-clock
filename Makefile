@@ -1,17 +1,15 @@
-%.o: %.c
-	cc -c %<
+INCLUDE := -I ~/include
+LDFLAGS := -L ~/lib -lsense -lm
 
-objects:
-	cc -c *.c
-
-all: objects
-	cc -lm  -o clock *.o
-
-run: all
-	./clock.sh | ./clock
+all: clockdisplay
+clockdisplay: main.o display.o
+        cc -o clockdisplay main.o display.o $(LDFLAGS)
 
 clean:
-	rm *[^framebuffer].o clock
-
-debug: clock
-	cgdb clock
+        rm -f *.o clockdisplay
+run:
+        bash clock.sh | ./clockdisplay
+main.o: main.c display.h
+        cc -c main.c -I ~/include
+display.o: display.c display.h
+        cc -c display.c -I ~/include

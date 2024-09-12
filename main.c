@@ -1,42 +1,104 @@
-
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#include <math.h>
-#include <ctype.h>
+#include <string.h>
 #include "display.h"
-#include "framebuffer.h"
+#include "sense.h"
+#include <stdbool.h>
+#include <ctype.h>
 
-int main(){
+bool isValidString(char word[]);
 
-	uint16_t blank = getColor(0,0,0);
-	pi_framebuffer_t *fb = getFBDevice();
-	clearBitmap(fb->bitmap, blank);
+int main(void){
+        open_display();
+        bool isValid = true;
+while(isValid){
+        int hr = 0, min = 0, sec = 0;
+        char time[11];
 
-	display_colons(fb);
+        scanf("%s", &time);
+        clear();
 
-	char input[10];
-	int hours, minutes, seconds;
+        if(strlen(time)>9 || strlen(time)<5 || !(isValidString(time))){
+                isValid = false;
+        } else {
+                int colonsPassed = 0;
 
-	//fb->bitmap->pixel[1][1] = getColor(255,0,0);
+                for(int i=0; i<strlen(time); i++){
 
-	while (1){
+                        if(!(time[i] == ':')){
 
-		scanf("%s", input);
-		//printf("%s\n", input);
-		hours = atoi(input);
-		minutes = atoi(&input[3]);
-		seconds = atoi(&input[6]);
+                                switch(colonsPassed){
+                                        case 0:
+                                                if(time[i+1] == ':'){
+                                                        hr += (time[i] - '0');
+                                                } else {
+                                                        hr += (time[i] - '0') * 10;
+                                                }
+                                        break;
 
-		if ((strlen(input) != 8) || !isdigit(input[0]) || !isdigit(input[3]) || !isdigit(input[6])){
-			clearBitmap(fb->bitmap, blank);
-			freeFrameBuffer(fb);
-			return 0;
-		}
+                                        case 1:
+                                                if(time[i+1] == ':'){
+                            min += (time[i] - '0');
+                                  } else {
+                            min += (time[i] - '0') * 10;
+                                      }
+                                        break;
 
-		display_time(hours, minutes, seconds, fb);
-	}
-	printf("%s", input);
+                                        case 2:
+                                                if(i+1 == strlen(time)){
+                                                        sec += (time[i] - '0');
+                                                } else {
+                                                        sec += (time[i] - '0') * 10;
+                                                }
+                                        break;
+                                }
+                        } else {
+                                colonsPassed++;
+                        }
+                }
+        }
 
-	return 0;
+        if(isValid){
+                if(hr <= 23 && min <= 59 && sec <= 59){
+                        display_time(hr, min, sec);
+                } else {
+                        isValid = false;
+                }
+        }
+}
+        close_display();
+
+        return 0;
+}
+
+bool isValidString(char word[]){
+        bool b = true;
+
+        int colon = 0, num = 0, colon2 = 0;
+
+        if(b){
+                for(int i=0; i<strlen(word); i++){
+
+                        if(word[i] == ':'){
+                                colon++;
+                                colon2++;
+                                num = 0;
+                        } else {
+                                colon2 = 0;
+                                num++;
+                        }
+
+                        if(num > 2 || isalpha(word[i]) || colon2 > 1){
+                                b = false;
+                                break;
+                        }
+
+                }
+
+                if(b && colon != 2){
+                        b = false;
+                }
+        }
+
+        return b;
 }
